@@ -5,6 +5,8 @@ from ultralytics import YOLO
 import numpy as np
 from PIL import Image
 import cv2
+import os
+import random
 
 # --- 1. LOAD THE MODEL ---
 model = YOLO('best.pt')
@@ -48,18 +50,53 @@ def predict_image(image):
 
     return annotated_image, mapped_names_str
 
+# --- 2b. RANDOM IMAGE HANDLER ---
+def random_cxr():
+    images_dir = "images"
+    image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    if not image_files:
+        return None, "No images found in /images"
+    random_file = random.choice(image_files)
+    img_path = os.path.join(images_dir, random_file)
+    img = Image.open(img_path).convert("RGB")
+    img_np = np.array(img)
+    return predict_image(img_np)
+
 # --- 3. CREATE THE GRADIO INTERFACE ---
-# This creates the simple "drag-and-drop" web UI.
-iface = gr.Interface(
-    fn=predict_image,
-    inputs=gr.Image(type="numpy", label="Upload Chest X-Ray"),
-    outputs=[
-        gr.Image(type="numpy", label="Model Prediction"),
-        gr.Textbox(label="Predicted Device(s)")
-    ],
-    title="ICD Device Detector",
-    description="Upload an X-ray to identify the ICD model. This is a demo based on Linh Nguyen's research with Dr. Clark."
-)
+# This creates the "drag-and-drop" web UI with a Random CXR button.
+
+with gr.Blocks() as iface:
+    gr.Markdown("# ICD Device Detector")
+    gr.Markdown(
+        """
+        **Upload an X-ray or click "Random CXR" to identify the ICD model.**
+        
+        This demo uses a deep learning model trained on chest X-rays to detect and classify implantable cardioverter-defibrillator (ICD) devices.
+        The model is based on YOLOv8 and was developed as part of Linh Nguyen's research with Dr. Clark.
+        
+        **Average inference time is ~30 seconds due to heavy server usage. Please be patient after submitting an image.**
+        
+        This tool is intended for research and educational purposes only.
+        """
+    )
+
+    with gr.Row():
+        img_input = gr.Image(type="numpy", label="Upload Chest X-Ray")
+        random_btn = gr.Button("Random CXR")
+
+    output_img = gr.Image(type="numpy", label="Model Prediction")
+    output_txt = gr.Textbox(label="Predicted Device(s)")
+
+    img_input.change(
+        fn=predict_image,
+        inputs=img_input,
+        outputs=[output_img, output_txt]
+    )
+    random_btn.click(
+        fn=random_cxr,
+        inputs=None,
+        outputs=[output_img, output_txt]
+    )
 
 # --- 4. LAUNCH THE APP ---
 # This line starts the web server.
