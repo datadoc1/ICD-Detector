@@ -1,0 +1,10 @@
+torch>=1.8.0
+ultralytics
+matplotlib
+numpy
+opencv-python
+pandas
+PyYAML
+scipy
+tqdm
+gradio
