@@ -8,3 +8,5 @@ PyYAML
 scipy
 tqdm
 gradio
+seaborn
+Pillow
