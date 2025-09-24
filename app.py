@@ -7,9 +7,25 @@ from PIL import Image
 import cv2
 import os
 import random
+import torch
+
+# Check if CUDA is available and set device
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f"Using device: {device}")
 
 # --- 1. LOAD THE MODEL ---
 model = YOLO('best.pt')
+
+# Move model to GPU if available
+if device == 'cuda':
+    model.to(device)
+
+# Warm up the model to ensure first inference isn't slow
+model.warmup(imgsz=(640, 640))
+
+# Cache image files to avoid repeated directory scans
+images_dir = "images"
+image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 
 # --- 2. DEFINE THE PREDICTION FUNCTION ---
 
@@ -50,35 +66,8 @@ with gr.Blocks() as iface:
         '''
     )
 
-    # Show base image immediately on upload
-    def show_base_image(image):
-        return image
-
-    img_input.change(
-        fn=show_base_image,
-        inputs=img_input,
-        outputs=base_viewer,
-        queue=False
-    )
-
-    # Run prediction after base image is shown
-    def predict_image_with_bar(image):
-        if image is None:
-            return None, ""
-        pred_img, pred_txt, pred_bar_str = _predict_and_bar(image)
-        return pred_img, pred_bar_str
-
-    img_input.change(
-        fn=predict_image_with_bar,
-        inputs=img_input,
-        outputs=[output_img, pred_bar],
-        queue=True
-    )
-
-    # Random CXR: show base image first, then run prediction
-    def random_cxr_base():
-        images_dir = "images"
-        image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    # Function to select a random image from the cached list
+    def get_random_image():
         if not image_files:
             return None
         random_file = random.choice(image_files)
@@ -87,36 +76,42 @@ with gr.Blocks() as iface:
         img_np = np.array(img)
         return img_np
 
-    random_btn.click(
-        fn=random_cxr_base,
-        inputs=None,
-        outputs=base_viewer,
-        queue=False
+    # Show base image and run prediction in one go to avoid redundant processing
+    def process_image(image):
+        if image is None:
+            return None, None, ""
+        # Run prediction only once
+        pred_img, pred_txt, pred_bar_str = _predict_and_bar(image)
+        return image, pred_img, pred_bar_str
+
+    img_input.change(
+        fn=process_image,
+        inputs=img_input,
+        outputs=[base_viewer, output_img, pred_bar],
+        queue=True
     )
 
-    def random_cxr_predict():
-        images_dir = "images"
-        image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-        if not image_files:
-            return None, None
-        random_file = random.choice(image_files)
-        img_path = os.path.join(images_dir, random_file)
-        img = Image.open(img_path).convert("RGB")
-        img_np = np.array(img)
+    # Random CXR: show base image and run prediction in one function
+    def random_cxr_process():
+        img_np = get_random_image()
+        if img_np is None:
+            return None, None, ""
+        # Run prediction only once
         pred_img, pred_txt, pred_bar_str = _predict_and_bar(img_np)
-        return pred_img, pred_bar_str
+        return img_np, pred_img, pred_bar_str
 
     random_btn.click(
-        fn=random_cxr_predict,
+        fn=random_cxr_process,
         inputs=None,
-        outputs=[output_img, pred_bar],
+        outputs=[base_viewer, output_img, pred_bar],
         queue=True
     )
 
     def _predict_and_bar(image):
         # Run model only once and reuse results for both annotation and confidence
         img = Image.fromarray(image.astype('uint8'), 'RGB')
-        results = model(img)
+        # Ensure the model uses the correct device
+        results = model(img, device=device)
         # Draw boxes and collect mapped class names
         annotated_image = np.array(img)
         class_map = {
