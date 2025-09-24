@@ -163,12 +163,11 @@ with gr.Blocks() as iface:
     )
 
     def _predict_and_bar(image):
-        # Use original predict_image logic, but also extract top prediction and confidence
-        annotated_image, mapped_names_str = predict_image(image)
-        # Extract top prediction and confidence
-        results = model(Image.fromarray(image.astype('uint8'), 'RGB'))
-        top_pred = None
-        top_conf = None
+        # Run model only once and reuse results for both annotation and confidence
+        img = Image.fromarray(image.astype('uint8'), 'RGB')
+        results = model(img)
+        # Draw boxes and collect mapped class names
+        annotated_image = np.array(img)
         class_map = {
             0: 'BSC120',
             1: 'BSC140',
@@ -177,9 +176,20 @@ with gr.Blocks() as iface:
             4: 'Medtronic',
             5: 'St Jude'
         }
+        mapped_names = []
+        top_pred = None
+        top_conf = None
         for r in results:
+            for i, box in enumerate(r.boxes):
+                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                cls = int(box.cls[0].item())
+                conf = float(box.conf[0].item())
+                mapped_names.append(class_map.get(cls, f"Unknown({cls})"))
+                label = f"{class_map.get(cls, f'Unknown({cls})')} {conf:.2f}"
+                cv2.rectangle(annotated_image, (x1, y1), (x2, y2), (0,255,0), 2)
+                cv2.putText(annotated_image, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
             if len(r.boxes) > 0:
-                # Take the highest confidence box
+                # Take the highest confidence box for bar
                 confs = [float(box.conf[0].item()) for box in r.boxes]
                 idx = int(np.argmax(confs))
                 box = r.boxes[idx]
@@ -187,7 +197,7 @@ with gr.Blocks() as iface:
                 conf = float(box.conf[0].item())
                 top_pred = class_map.get(cls, f"Unknown({cls})")
                 top_conf = int(conf * 100)
-                break
+        mapped_names_str = ", ".join(set(mapped_names)) if mapped_names else "No device detected"
         if top_pred is not None and top_conf is not None:
             bar_str = f"<div style='text-align:center; font-size:1.2em; font-weight:bold;'>This is a {top_pred} ICD, and we are {top_conf}% confident about it</div>"
         else:
