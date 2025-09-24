@@ -66,47 +66,101 @@ def random_cxr():
 # This creates the "drag-and-drop" web UI with a Random CXR button.
 
 with gr.Blocks() as iface:
-    gr.Markdown("# ICD Device Detector")
+    gr.Markdown("# Dr. Kal Clark")
     gr.Markdown(
         """
-        **Upload an X-ray or click "Random CXR" to identify the ICD model.**
+        **Upload an X-ray or click <span style='font-size:1.2em;'>🎲</span> Random CXR to identify the ICD model.**
         
         This demo uses a deep learning model trained on chest X-rays to detect and classify implantable cardioverter-defibrillator (ICD) devices.
         The model is based on YOLOv8 and was developed as part of Linh Nguyen's research with Dr. Clark.
-        
-        **Average inference time is ~30 seconds due to heavy server usage. Please be patient after submitting an image.**
         
         This tool is intended for research and educational purposes only.
         """
     )
 
     with gr.Row():
-        img_input = gr.Image(type="numpy", label="Upload Chest X-Ray")
-        random_btn = gr.Button("Random CXR")
+        img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, tool=None, elem_id="upload-img")
+        random_btn = gr.Button("🎲 Random CXR", elem_id="random-btn", variant="primary")
 
     with gr.Row():
-        base_viewer = gr.Image(type="numpy", label="Base Image", interactive=False)
-        output_img = gr.Image(type="numpy", label="Detection", interactive=False)
+        base_viewer = gr.Image(type="numpy", label="Base Image", interactive=False, elem_id="base-img")
+        output_img = gr.Image(type="numpy", label="Detection", interactive=False, elem_id="detect-img")
 
     pred_bar = gr.Markdown("")
 
+    # Style buttons for consistency
+    gr.HTML(
+        '''
+        <style>
+        #upload-img .upload-box { border-radius: 8px; }
+        #random-btn button { background: #007bff; color: white; border-radius: 8px; font-weight: bold; }
+        .gr-button { border-radius: 8px !important; font-weight: bold !important; }
+        </style>
+        '''
+    )
+
+    # Show base image immediately on upload
+    def show_base_image(image):
+        return image
+
+    img_input.change(
+        fn=show_base_image,
+        inputs=img_input,
+        outputs=base_viewer,
+        queue=False
+    )
+
+    # Run prediction after base image is shown
     def predict_image_with_bar(image):
         if image is None:
-            return None, None, ""
+            return None, ""
         pred_img, pred_txt, pred_bar_str = _predict_and_bar(image)
-        return image, pred_img, pred_bar_str
+        return pred_img, pred_bar_str
 
-    def random_cxr_with_bar():
+    img_input.change(
+        fn=predict_image_with_bar,
+        inputs=img_input,
+        outputs=[output_img, pred_bar],
+        queue=True
+    )
+
+    # Random CXR: show base image first, then run prediction
+    def random_cxr_base():
         images_dir = "images"
         image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
         if not image_files:
-            return None, None, "No images found in /images"
+            return None
+        random_file = random.choice(image_files)
+        img_path = os.path.join(images_dir, random_file)
+        img = Image.open(img_path).convert("RGB")
+        img_np = np.array(img)
+        return img_np
+
+    random_btn.click(
+        fn=random_cxr_base,
+        inputs=None,
+        outputs=base_viewer,
+        queue=False
+    )
+
+    def random_cxr_predict():
+        images_dir = "images"
+        image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        if not image_files:
+            return None, None
         random_file = random.choice(image_files)
         img_path = os.path.join(images_dir, random_file)
         img = Image.open(img_path).convert("RGB")
         img_np = np.array(img)
         pred_img, pred_txt, pred_bar_str = _predict_and_bar(img_np)
-        return img_np, pred_img, pred_bar_str
+        return pred_img, pred_bar_str
+
+    random_btn.click(
+        fn=random_cxr_predict,
+        inputs=None,
+        outputs=[output_img, pred_bar],
+        queue=True
+    )
 
     def _predict_and_bar(image):
         # Use original predict_image logic, but also extract top prediction and confidence
@@ -140,16 +194,6 @@ with gr.Blocks() as iface:
             bar_str = "<div style='text-align:center; font-size:1.2em; font-weight:bold;'>No ICD detected</div>"
         return annotated_image, mapped_names_str, bar_str
 
-    img_input.change(
-        fn=predict_image_with_bar,
-        inputs=img_input,
-        outputs=[base_viewer, output_img, pred_bar]
-    )
-    random_btn.click(
-        fn=random_cxr_with_bar,
-        inputs=None,
-        outputs=[base_viewer, output_img, pred_bar]
-    )
 
 # --- 4. LAUNCH THE APP ---
 # This line starts the web server.
