@@ -84,18 +84,71 @@ with gr.Blocks() as iface:
         img_input = gr.Image(type="numpy", label="Upload Chest X-Ray")
         random_btn = gr.Button("Random CXR")
 
-    output_img = gr.Image(type="numpy", label="Model Prediction")
-    output_txt = gr.Textbox(label="Predicted Device(s)")
+    with gr.Row():
+        base_viewer = gr.Image(type="numpy", label="Base Image", interactive=False)
+        output_img = gr.Image(type="numpy", label="Detection", interactive=False)
+
+    pred_bar = gr.Markdown("")
+
+    def predict_image_with_bar(image):
+        if image is None:
+            return None, None, ""
+        pred_img, pred_txt, pred_bar_str = _predict_and_bar(image)
+        return image, pred_img, pred_bar_str
+
+    def random_cxr_with_bar():
+        images_dir = "images"
+        image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        if not image_files:
+            return None, None, "No images found in /images"
+        random_file = random.choice(image_files)
+        img_path = os.path.join(images_dir, random_file)
+        img = Image.open(img_path).convert("RGB")
+        img_np = np.array(img)
+        pred_img, pred_txt, pred_bar_str = _predict_and_bar(img_np)
+        return img_np, pred_img, pred_bar_str
+
+    def _predict_and_bar(image):
+        # Use original predict_image logic, but also extract top prediction and confidence
+        annotated_image, mapped_names_str = predict_image(image)
+        # Extract top prediction and confidence
+        results = model(Image.fromarray(image.astype('uint8'), 'RGB'))
+        top_pred = None
+        top_conf = None
+        class_map = {
+            0: 'BSC120',
+            1: 'BSC140',
+            2: 'Biotronik',
+            3: 'Boston Scientific',
+            4: 'Medtronic',
+            5: 'St Jude'
+        }
+        for r in results:
+            if len(r.boxes) > 0:
+                # Take the highest confidence box
+                confs = [float(box.conf[0].item()) for box in r.boxes]
+                idx = int(np.argmax(confs))
+                box = r.boxes[idx]
+                cls = int(box.cls[0].item())
+                conf = float(box.conf[0].item())
+                top_pred = class_map.get(cls, f"Unknown({cls})")
+                top_conf = int(conf * 100)
+                break
+        if top_pred is not None and top_conf is not None:
+            bar_str = f"<div style='text-align:center; font-size:1.2em; font-weight:bold;'>This is a {top_pred} ICD, and we are {top_conf}% confident about it</div>"
+        else:
+            bar_str = "<div style='text-align:center; font-size:1.2em; font-weight:bold;'>No ICD detected</div>"
+        return annotated_image, mapped_names_str, bar_str
 
     img_input.change(
-        fn=predict_image,
+        fn=predict_image_with_bar,
         inputs=img_input,
-        outputs=[output_img, output_txt]
+        outputs=[base_viewer, output_img, pred_bar]
     )
     random_btn.click(
-        fn=random_cxr,
+        fn=random_cxr_with_bar,
         inputs=None,
-        outputs=[output_img, output_txt]
+        outputs=[base_viewer, output_img, pred_bar]
     )
 
 # --- 4. LAUNCH THE APP ---
