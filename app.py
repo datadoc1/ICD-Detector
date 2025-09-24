@@ -66,13 +66,13 @@ def random_cxr():
 # This creates the "drag-and-drop" web UI with a Random CXR button.
 
 with gr.Blocks() as iface:
-    gr.Markdown("# Dr. Kal Clark")
+    gr.Markdown("What Kind of ICD is This?")
     gr.Markdown(
         """
         **Upload an X-ray or click <span style='font-size:1.2em;'>🎲</span> Random CXR to identify the ICD model.**
         
         This demo uses a deep learning model trained on chest X-rays to detect and classify implantable cardioverter-defibrillator (ICD) devices.
-        The model is based on YOLOv8 and was developed as part of Linh Nguyen's research with Dr. Clark.
+        The model is based on YOLOv8 and was developed as part of Linh Nguyen's research with Dr. Kal Clark.
         
         This tool is intended for research and educational purposes only.
         """
