@@ -20,8 +20,6 @@ model = YOLO('best.pt')
 if device == 'cuda':
     model.to(device)
 
-# Warm up the model to ensure first inference isn't slow
-model.warmup(imgsz=(640, 640))
 
 # Cache image files to avoid repeated directory scans
 images_dir = "images"
