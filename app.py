@@ -79,7 +79,7 @@ with gr.Blocks() as iface:
     )
 
     with gr.Row():
-        img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, tool=None, elem_id="upload-img")
+        img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, elem_id="upload-img")
         random_btn = gr.Button("🎲 Random CXR", elem_id="random-btn", variant="primary")
 
     with gr.Row():
