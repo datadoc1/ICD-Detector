@@ -9,16 +9,18 @@ import os
 import random
 import torch
 
+# Optimize for CPU multi-threading
+torch.set_num_threads(os.cpu_count())
+
 # Check if CUDA is available and set device
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = 'cpu'  # Force CPU as per requirements
 print(f"Using device: {device}")
 
 # --- 1. LOAD THE MODEL ---
 model = YOLO('best.pt')
 
-# Move model to GPU if available
-if device == 'cuda':
-    model.to(device)
+# Load model explicitly on CPU
+model.to(device)
 
 
 # Cache image files to avoid repeated directory scans
@@ -107,11 +109,15 @@ with gr.Blocks() as iface:
 
     def _predict_and_bar(image):
         # Run model only once and reuse results for both annotation and confidence
-        img = Image.fromarray(image.astype('uint8'), 'RGB')
-        # Ensure the model uses the correct device
-        results = model(img, device=device)
+        import time
+        start_time = time.time()
+        # Use numpy directly for model input (faster than PIL conversion)
+        results = model(image, device=device)
+        inference_end = time.time()
+        inference_time = inference_end - start_time
+        print(f"Inference time: {inference_time:.2f}s")
         # Draw boxes and collect mapped class names
-        annotated_image = np.array(img)
+        annotated_image = image.copy()  # Use copy to avoid modifying input
         class_map = {
             0: 'BSC120',
             1: 'BSC140',
@@ -123,6 +129,7 @@ with gr.Blocks() as iface:
         mapped_names = []
         top_pred = None
         top_conf = None
+        draw_start = time.time()
         for r in results:
             for i, box in enumerate(r.boxes):
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
@@ -132,6 +139,7 @@ with gr.Blocks() as iface:
                 label = f"{class_map.get(cls, f'Unknown({cls})')} {conf:.2f}"
                 cv2.rectangle(annotated_image, (x1, y1), (x2, y2), (0,255,0), 2)
                 cv2.putText(annotated_image, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
+
             if len(r.boxes) > 0:
                 # Take the highest confidence box for bar
                 confs = [float(box.conf[0].item()) for box in r.boxes]
@@ -141,6 +149,11 @@ with gr.Blocks() as iface:
                 conf = float(box.conf[0].item())
                 top_pred = class_map.get(cls, f"Unknown({cls})")
                 top_conf = int(conf * 100)
+        draw_end = time.time()
+        draw_time = draw_end - draw_start
+        total_time = draw_end - start_time
+        print(f"Drawing time: {draw_time:.2f}s")
+        print(f"Total processing time: {total_time:.2f}s")
         mapped_names_str = ", ".join(set(mapped_names)) if mapped_names else "No device detected"
         if top_pred is not None and top_conf is not None:
             bar_str = f"<div style='text-align:center; font-size:1.2em; font-weight:bold;'>This is a {top_pred} ICD, and we are {top_conf}% confident about it</div>"
