@@ -45,6 +45,31 @@ with gr.Blocks() as iface:
         """
     )
 
+    # Supported models table
+    supported_models = [
+        'Biotronik',
+        'Biotronik - Birdpeak can',
+        'BSC120 MRI-nonconditional ICD',
+        'BSC140 MRI-conditional ICD',
+        'Boston Scientific',
+        'Boston Scientific BOS112',
+        'Boston Scientific BSC120',
+        'Boston Scientific BSC140',
+        'Medtronic',
+        'Medtronic - PSI',
+        'Medtronic - PUG',
+        'Medtronic - PVR',
+        'Medtronic - PXR',
+        'Medtronic - PXT',
+        'St Jude',
+        'St Jude - Current DR',
+        'St Jude - Unify'
+    ]
+    table_md = "| Supported Models |\n| --- |\n"
+    for model in supported_models:
+        table_md += f"| {model} |\n"
+    gr.Markdown(table_md)
+
     with gr.Row():
         img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, elem_id="upload-img")
         random_btn = gr.Button("🎲 Random CXR", elem_id="random-btn", variant="primary")
@@ -169,7 +194,7 @@ with gr.Blocks() as iface:
         if top_pred is not None and top_conf is not None:
             bar_str = f"<div style='text-align:center; font-size:1.2em; font-weight:bold;'>Detected device: {top_pred} with {top_conf}% confidence</div>"
         else:
-            bar_str = "<div style='text-align:center; font-size:1.2em; font-weight:bold;'>No device detected</div>"
+            bar_str = "<div style='text-align:center; font-size:1.2em; font-weight:bold;'>The heart devices are not one of the ICDs above</div>"
         return annotated_image, mapped_names_str, bar_str
 
 
