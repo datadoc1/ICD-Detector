@@ -33,12 +33,12 @@ image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', 
 # This creates the "drag-and-drop" web UI with a Random CXR button.
 
 with gr.Blocks() as iface:
-    gr.Markdown("What Kind of ICD is This?")
+    gr.Markdown("What model device is on this CXR?:")
     gr.Markdown(
         """
-        **Upload an X-ray or click <span style='font-size:1.2em;'>🎲</span> Random CXR to identify the ICD model.**
+        **Upload an X-ray or click <span style='font-size:1.2em;'>🎲</span> Random CXR to identify the device model.**
         
-        This demo uses a deep learning model trained on chest X-rays to detect and classify implantable cardioverter-defibrillator (ICD) devices.
+        This demo uses a deep learning model trained on chest X-rays to detect and classify implantable cardiac devices.
         The model is based on YOLOv8 and was developed as part of Linh Nguyen's research with Dr. Kal Clark.
         
         This tool is intended for research and educational purposes only.
@@ -119,12 +119,23 @@ with gr.Blocks() as iface:
         # Draw boxes and collect mapped class names
         annotated_image = image.copy()  # Use copy to avoid modifying input
         class_map = {
-            0: 'BSC120',
-            1: 'BSC140',
-            2: 'Biotronik',
-            3: 'Boston Scientific',
-            4: 'Medtronic',
-            5: 'St Jude'
+            0: 'Biotronik',
+            1: 'Biotronik - Birdpeak can',
+            2: 'BSC120 MRI-nonconditional ICD',
+            3: 'BSC140 MRI-conditional ICD',
+            4: 'Boston Scientific',
+            5: 'Boston Scientific BOS112',
+            6: 'Boston Scientific BSC120',
+            7: 'Boston Scientific BSC140',
+            8: 'Medtronic',
+            9: 'Medtronic - PSI',
+            10: 'Medtronic - PUG',
+            11: 'Medtronic - PVR',
+            12: 'Medtronic - PXR',
+            13: 'Medtronic - PXT',
+            14: 'St Jude',
+            15: 'St Jude - Current DR',
+            16: 'St Jude - Unify'
         }
         mapped_names = []
         top_pred = None
@@ -156,9 +167,9 @@ with gr.Blocks() as iface:
         print(f"Total processing time: {total_time:.2f}s")
         mapped_names_str = ", ".join(set(mapped_names)) if mapped_names else "No device detected"
         if top_pred is not None and top_conf is not None:
-            bar_str = f"<div style='text-align:center; font-size:1.2em; font-weight:bold;'>This is a {top_pred} ICD, and we are {top_conf}% confident about it</div>"
+            bar_str = f"<div style='text-align:center; font-size:1.2em; font-weight:bold;'>Detected device: {top_pred} with {top_conf}% confidence</div>"
         else:
-            bar_str = "<div style='text-align:center; font-size:1.2em; font-weight:bold;'>No ICD detected</div>"
+            bar_str = "<div style='text-align:center; font-size:1.2em; font-weight:bold;'>No device detected</div>"
         return annotated_image, mapped_names_str, bar_str
 
 
