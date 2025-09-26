@@ -33,7 +33,7 @@ image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(('.png', 
 # This creates the "drag-and-drop" web UI with a Random CXR button.
 
 with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { flex-wrap: wrap; }") as iface:
-    title = gr.Markdown("What model device is on this CXR?:")
+    gr.Markdown("What model device is on this CXR?:")
     gr.Markdown(
         """
         **Upload an X-ray or click <span style='font-size:1.2em;'>🎲</span> Random CXR to identify the device model.**
@@ -45,7 +45,7 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
         """
     )
 
-    # Supported models tooltip
+    # Supported models accordion (collapsible to save space)
     supported_models = [
         'Biotronik',
         'Biotronik - Birdpeak can',
@@ -65,8 +65,9 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
         'St Jude - Current DR',
         'St Jude - Unify'
     ]
-    tooltip_text = "**Supported Models:**\n" + "\n".join([f"- {model}" for model in supported_models])
-    gr.Tooltip(title, tooltip_text, show_on_click=False)
+    models_list = "\n".join([f"- {model}" for model in supported_models])
+    with gr.Accordion("Supported Models", open=False):
+        gr.Markdown(f"**Supported Models:**\n{models_list}")
 
     with gr.Row():
         img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, elem_id="upload-img")
