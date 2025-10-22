@@ -12,29 +12,49 @@ import random
 num_threads = os.cpu_count() or 1
 print(f"Using device: CPU (threads={num_threads})")
 
-# --- 1. LOAD THE MODEL ---
-# Prefer an exported ONNX model when present, otherwise fall back to .pt
-if os.path.exists('model/best.onnx'):
-    model_path = 'model/best.onnx'
-elif os.path.exists('model/best.pt'):
-    model_path = 'model/best.pt'
-else:
-    model_path = 'best.onnx'
+# --- 1. LOAD THE MODEL (validated & fail-fast) ---
+# Prefer an exported ONNX model when present, otherwise fall back to .pt.
+# Fail fast with clear logs if no model artifact is present in the image.
+model_path = None
+searched = ['model/best.onnx', 'model/best.pt', 'best.onnx']
+for p in searched:
+    if os.path.exists(p):
+        model_path = p
+        break
+
+if model_path is None:
+    print("ERROR: No model artifact found in container. Expected one of: model/best.onnx, model/best.pt, or best.onnx")
+    print("Searched locations:", ", ".join(searched))
+    print("Please ensure the trained model is added to the Docker build context and copied into the image (or implement a runtime download).")
+    import sys
+    sys.exit(1)
+
+print(f"Using model artifact at: {model_path}")
 # Note: model was trained with a YOLOv11 architecture (training script in model/training_script.py)
-# Load ONNX with onnxruntime for a lightweight CPU-only runtime. If a .pt is present and ONNX missing,
-# we fall back to ultralytics (which requires torch) — this should be avoided for small deployments.
 session = None
 model = None
 if model_path.endswith('.onnx'):
-    sess_options = ort.SessionOptions()
-    sess_options.intra_op_num_threads = num_threads
-    sess_options.inter_op_num_threads = num_threads
-    sess_options.log_severity_level = 3
-    session = ort.InferenceSession(model_path, sess_options, providers=['CPUExecutionProvider'])
+    try:
+        sess_options = ort.SessionOptions()
+        sess_options.intra_op_num_threads = num_threads
+        sess_options.inter_op_num_threads = num_threads
+        sess_options.log_severity_level = 3
+        session = ort.InferenceSession(model_path, sess_options, providers=['CPUExecutionProvider'])
+    except Exception as e:
+        print(f"ERROR: Failed to load ONNX model at '{model_path}': {e}")
+        import traceback, sys
+        traceback.print_exc()
+        sys.exit(1)
 else:
     # Fallback: lazy-import ultralytics only if needed
-    from ultralytics import YOLO
-    model = YOLO(model_path)
+    try:
+        from ultralytics import YOLO
+        model = YOLO(model_path)
+    except Exception as e:
+        print(f"ERROR: Failed to load PyTorch model at '{model_path}': {e}")
+        import traceback, sys
+        traceback.print_exc()
+        sys.exit(1)
 
 # Cache image files to avoid repeated directory scans
 # Prefer the cleaned dataset layout under model/data/val (common export layout).

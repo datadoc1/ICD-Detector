@@ -1,2 +1,4 @@
 /datasets
-/model
+/model/datasets
+/model/data
+model/best.pt
