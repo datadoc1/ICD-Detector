@@ -21,7 +21,7 @@ short_description: >
 **ICD Detector: Spot Implanted Cardiac Devices in Chest X-Rays.**
 
 **Overview (short):**
-Built and hosted by Keola Ching, this demo uses a YOLOv11-based model trained from a Roboflow export to explore automated detection of implantable cardioverter‑defibrillators (ICDs) on chest X-rays. Upload a CXR screenshot and the demo will attempt to identify device(s), display bounding boxes, and show a confidence bar with a short interpretation.
+Built and hosted by Linh Nguyen, Keola Ching, and Dr. Kal Clark this demo uses a YOLOv11-based model trained from a Roboflow export to explore automated detection of implantable cardioverter‑defibrillators (ICDs) on chest X-rays. Upload a CXR screenshot and the demo will attempt to identify device(s), display bounding boxes, and show a confidence bar with a short interpretation.
 
 Standard project layout (cleaned):
 - Model artifact: model/best.pt
