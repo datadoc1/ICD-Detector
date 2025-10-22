@@ -293,5 +293,20 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
 
 
 # --- 4. LAUNCH THE APP ---
-# This line starts the web server.
-iface.launch()
+# Start the web server. Add explicit startup logs and keep-alive fallback so
+# platform health checks can see the process and we can debug if Gradio exits.
+print(f"Starting Gradio on 0.0.0.0:{os.environ.get('PORT', 8080)} ...")
+try:
+    iface.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 8080)), enable_queue=True)
+    # If iface.launch blocks normally, code below won't run. If it returns, log and keep container alive.
+    print("Gradio launch() returned — entering keep-alive loop for debugging (container will remain up).")
+except Exception as e:
+    print(f"Gradio raised an exception during launch: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Keep the process alive after launch returns so Fly health checks can succeed while we debug.
+import time
+print("Entering fallback keep-alive loop (sleep). Press Ctrl+C to exit.")
+while True:
+    time.sleep(60)
