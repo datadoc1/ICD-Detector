@@ -1,6 +1,5 @@
 gradio
-ultralytics
-torch
+onnxruntime
 numpy
 pillow
-opencv-python
+opencv-python-headless

@@ -4,10 +4,8 @@ FROM python:3.10-slim
 # Set working dir
 WORKDIR /app
 
-# Install system dependencies required for some Python packages (opencv, pillow, etc.)
+# Install minimal system dependencies required for runtime (opencv, pillow)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    git \
     wget \
     ca-certificates \
     libglib2.0-0 \
@@ -19,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy only requirements first for better layer caching
 COPY requirements.txt .
 
-# Upgrade pip and install Python deps
+# Upgrade pip and install Python dependencies (use ONNX Runtime instead of torch for smaller image)
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
@@ -29,8 +27,7 @@ COPY . .
 # Expose the port Gradio will listen on (internal container port)
 EXPOSE 8080
 
-# Ensure Gradio binds to 0.0.0.0 and uses the PORT provided by the platform
-# Fly sets the $PORT env var automatically; we default to 8080 if not provided.
+# Ensure Gradio binds to 0.0.0.0 and use platform PORT at runtime
 ENV GRADIO_SERVER_NAME=0.0.0.0
 ENV GRADIO_SERVER_PORT=8080
 
