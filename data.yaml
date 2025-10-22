@@ -1,0 +1,27 @@
+# data.yaml (cleaned paths)
+# Dataset paths were reorganized to a canonical project layout under model/
+# Update these paths if you place images under a different folder layout.
+train: model/data/train
+val: model/data/val
+test: model/data/test
+
+# Class configuration
+nc: 17
+names:
+  - 'Biotronik'
+  - 'Biotronik - Birdpeak can'
+  - 'BSC120 MRI-nonconditional ICD'
+  - 'BSC140 MRI-conditional ICD'
+  - 'Boston Scientific'
+  - 'Boston Scientific BOS112'
+  - 'Boston Scientific BSC120'
+  - 'Boston Scientific BSC140'
+  - 'Medtronic'
+  - 'Medtronic - PSI'
+  - 'Medtronic - PUG'
+  - 'Medtronic - PVR'
+  - 'Medtronic - PXR'
+  - 'Medtronic - PXT'
+  - 'St Jude'
+  - 'St Jude - Current DR'
+  - 'St Jude - Unify'
