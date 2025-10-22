@@ -3,9 +3,8 @@ app = "icd-detector"
 kill_signal = "SIGINT"
 kill_timeout = 5
 
-[build]
-  image = "heroku/buildpacks:20"
-  builder = "pack"
+# Use the repository Dockerfile for builds so Fly uses the Docker image that runs the app.
+# Removed explicit buildpack configuration to ensure Docker-based builds (Fly will use the Dockerfile).
 
 [env]
   PORT = "8080"
