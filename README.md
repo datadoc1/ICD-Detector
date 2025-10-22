@@ -1,22 +1,3 @@
----
-title: ICD Detector: Spot Implanted Cardiac Devices in Chest X-Rays.
-emoji: 🏃
-colorFrom: gray
-colorTo: red
-sdk: gradio
-sdk_version: 5.46.0
-app_file: app.py
-pinned: false
-license: mit
-short_description: >
-  A med student's side project to train an AI on 98 chest X-ray (CXR) images
-  to detect implantable cardioverter‑defibrillators (ICDs) from four major
-  manufacturers. Upload a CXR screenshot and see if the model spots an ICD.
-  This is a prototype built with Roboflow and YOLO — results can be noisy and
-  may confuse ICDs and pacemakers because they share similar components.
-  Intended for education and entertainment only; not a medical device. Always
-  consult official MRI safety sources for clinical guidance.
----
 # ICD Detector (Space)
 **ICD Detector: Spot Implanted Cardiac Devices in Chest X-Rays.**
 
