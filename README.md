@@ -1,4 +1,3 @@
-
 ---
 title: ICD Detector
 emoji: 🫀
