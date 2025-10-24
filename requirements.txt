@@ -3,4 +3,3 @@ onnxruntime
 numpy
 pillow
 opencv-python-headless
-ultralytics
