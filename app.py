@@ -1,29 +1,27 @@
 # app.py
 
 import gradio as gr
-import onnxruntime as ort
 import numpy as np
 from PIL import Image
 import cv2
 import os
 import random
 
-# Optimize ONNX Runtime for CPU multi-threading
+# Threads for CPU operations
 num_threads = os.cpu_count() or 1
 print(f"Using device: CPU (threads={num_threads})")
 
 # --- 1. LOAD THE MODEL (validated & fail-fast) ---
-# Prefer PyTorch model for Fly.io compatibility (ONNX has Protobuf issues on Fly.io)
-# Fall back to ONNX if PyTorch fails
+# Only use PyTorch (.pt) models for this deployment
 model_path = None
-searched = ['model/best.pt', 'model/best.onnx', 'best.pt', 'best.onnx']
+searched = ['model/best.pt', 'best.pt']
 for p in searched:
     if os.path.exists(p):
         model_path = p
         break
 
 if model_path is None:
-    print("ERROR: No model artifact found in container. Expected one of: model/best.onnx, model/best.pt, or best.onnx")
+    print("ERROR: No model artifact found in container. Expected one of: model/best.pt or best.pt")
     print("Searched locations:", ", ".join(searched))
     print("Please ensure the trained model is added to the Docker build context and copied into the image (or implement a runtime download).")
     import sys
@@ -31,38 +29,19 @@ if model_path is None:
 
 print(f"Using model artifact at: {model_path}")
 # Note: model was trained with a YOLOv11 architecture (training script in model/training_script.py)
-session = None
 model = None
 model_load_error = False
-if model_path.endswith('.onnx'):
-    try:
-        sess_options = ort.SessionOptions()
-        sess_options.intra_op_num_threads = num_threads
-        sess_options.inter_op_num_threads = num_threads
-        sess_options.log_severity_level = 3
-        session = ort.InferenceSession(model_path, sess_options, providers=['CPUExecutionProvider'])
-        print("ONNX model loaded successfully")
-    except Exception as e:
-        # Do NOT exit the process here; allow the web server to start so platform health checks succeed.
-        print(f"ERROR: Failed to load ONNX model at '{model_path}': {e}")
-        import traceback
-        traceback.print_exc()
-        print("Continuing without a loaded model. Predictions will be disabled until a valid model is provided.")
-        session = None
-        model_load_error = True
-else:
-    # Fallback: lazy-import ultralytics only if needed
-    try:
-        from ultralytics import YOLO
-        model = YOLO(model_path)
-        print("PyTorch model loaded successfully")
-    except Exception as e:
-        print(f"ERROR: Failed to load PyTorch model at '{model_path}': {e}")
-        import traceback
-        traceback.print_exc()
-        print("Continuing without a loaded model. Predictions will be disabled until a valid model is provided.")
-        model = None
-        model_load_error = True
+try:
+    from ultralytics import YOLO
+    model = YOLO(model_path)
+    print("PyTorch model loaded successfully")
+except Exception as e:
+    print(f"ERROR: Failed to load PyTorch model at '{model_path}': {e}")
+    import traceback
+    traceback.print_exc()
+    print("Continuing without a loaded model. Predictions will be disabled until a valid model is provided.")
+    model = None
+    model_load_error = True
 
 # Cache image files to avoid repeated directory scans
 # Prefer the cleaned dataset layout under model/data/val (common export layout).
@@ -211,9 +190,8 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
         import time
         import traceback
         start_time = time.time()
-        # If neither an ONNX session nor a PyTorch model was successfully loaded,
-        # return a graceful placeholder so the server can still run and respond.
-        if session is None and model is None:
+        # If no PyTorch model was successfully loaded, return a graceful placeholder so the server can still run and respond.
+        if model is None:
             if image is None:
                 return None, None, "<div style='text-align:center; font-size:1.1em; font-weight:bold; color:red;'>Model not available</div>", "Model not loaded"
             annotated_image = image.copy()
@@ -226,80 +204,13 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
             explain_html = "Model failed to load during startup. Check application logs for details."
             return annotated_image, "Model not loaded", bar_str, explain_html
         try:
-            # Use numpy directly for model input (faster than PIL conversion)
-            # If we have an ONNX session, run ONNX inference; otherwise use ultralytics model.
-            if session is not None:
-                # Preprocess: letterbox to 640x640 (model expected size from training script)
-                def letterbox(im, new_shape=(640, 640), color=(114, 114, 114)):
-                    h, w = im.shape[:2]
-                    r = min(new_shape[0] / h, new_shape[1] / w)
-                    nh, nw = int(round(h * r)), int(round(w * r))
-                    resized = cv2.resize(im, (nw, nh))
-                    canvas = np.full((new_shape[0], new_shape[1], 3), color, dtype=np.uint8)
-                    dy = (new_shape[0] - nh) // 2
-                    dx = (new_shape[1] - nw) // 2
-                    canvas[dy:dy + nh, dx:dx + nw, :] = resized
-                    return canvas, r, dx, dy
-                img_resized, r, dx, dy = letterbox(image)
-                img_input = img_resized.astype(np.float32) / 255.0
-                # Convert HWC -> NCHW
-                img_input = np.transpose(img_input, (2, 0, 1))[np.newaxis, ...]
-                input_name = session.get_inputs()[0].name
-                outputs = session.run(None, {input_name: img_input})
-                out = outputs[0]
-                # Interpret outputs for common YOLO ONNX exports:
-                # Expecting shape (1, N, D) where D >= 6 (x1,y1,x2,y2,obj_conf,[class_probs...]) or (N,6)
-                results = []
-                if out is None:
-                    results = []
-                else:
-                    arr = np.array(out)
-                    if arr.ndim == 3:
-                        dets = arr[0]
-                    elif arr.ndim == 2:
-                        dets = arr
-                    else:
-                        dets = arr.reshape(-1, arr.shape[-1])
-                    # When dims > 6, compute class id via argmax of class probs
-                    if dets.size == 0:
-                        results = []
-                    else:
-                        D = dets.shape[1]
-                        if D >= 6:
-                            if D > 6:
-                                class_probs = dets[:, 5:]
-                                class_ids = np.argmax(class_probs, axis=1)
-                                class_scores = class_probs[np.arange(len(class_ids)), class_ids]
-                                confs = dets[:, 4] * class_scores
-                            else:
-                                class_ids = dets[:, 5].astype(int)
-                                confs = dets[:, 4]
-                            boxes = dets[:, :4].copy()
-                            # Undo letterbox padding/scale to original image coords
-                            boxes[:, [0, 2]] = (boxes[:, [0, 2]] - dx) / r
-                            boxes[:, [1, 3]] = (boxes[:, [1, 3]] - dy) / r
-                            # Build ultralytics-like results for downstream code reuse
-                            results = []
-                            for i in range(len(boxes)):
-                                b = boxes[i].tolist()
-                                box = type("box", (), {})()
-                                box.xyxy = np.array([b])
-                                box.cls = np.array([int(class_ids[i])])
-                                box.conf = np.array([float(confs[i])])
-                                results.append(type("r", (), {"boxes": [box]}))
-                        else:
-                            results = []
-                inference_end = time.time()
-                inference_time = inference_end - start_time
-                print(f"Inference time: {inference_time:.2f}s")
-                annotated_image = image.copy()  # Use copy to avoid modifying input
-            else:
-                results = model(image)
-                inference_end = time.time()
-                inference_time = inference_end - start_time
-                print(f"Inference time: {inference_time:.2f}s")
-                # Draw boxes and collect mapped class names
-                annotated_image = image.copy()  # Use copy to avoid modifying input
+            # Use ultralytics PyTorch model for inference
+            results = model(image)
+            inference_end = time.time()
+            inference_time = inference_end - start_time
+            print(f"Inference time: {inference_time:.2f}s")
+            # Draw boxes and collect mapped class names
+            annotated_image = image.copy()  # Use copy to avoid modifying input
             class_map = {
                 0: 'Biotronik',
                 1: 'Biotronik - Birdpeak can',
