@@ -1,4 +1,4 @@
 /datasets
 /model/datasets
 /model/data
-model/best.pt
+.env
