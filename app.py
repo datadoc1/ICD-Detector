@@ -1,19 +1,4 @@
 # app.py
----
-title: ICD Detector
-emoji: 🫀
-colorFrom: blue
-colorTo: green
-sdk: gradio
-sdk_version: 4.44.1
-app_file: app.py
-pinned: false
----
-
-# ICD Detector (Space)
-**ICD Detector: Spot Implanted Cardiac Devices in Chest X-Rays.**
-
-
 
 import gradio as gr
 import onnxruntime as ort
@@ -427,29 +412,6 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
 
 
 # --- 4. LAUNCH THE APP ---
-# Start the web server. Add explicit startup logs and keep-alive fallback so
-# platform health checks can see the process and we can debug if Gradio exits.
-print(f"Starting Gradio on 0.0.0.0:{os.environ.get('PORT', 8080)} ...")
-try:
-    # Older/newer gradio versions differ in how queueing is enabled.
-    # Prefer calling .queue() if available; otherwise launch normally without the
-    # unsupported 'enable_queue' keyword to avoid TypeError on some environments.
-    try:
-        launch_iface = iface.queue()
-    except Exception:
-        launch_iface = iface
-    # On Fly.io, don't share; locally, share for easy access
-    share = 'PORT' not in os.environ
-    launch_iface.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 8080)), share=share)
-    # If iface.launch blocks normally, code below won't run. If it returns, log and keep container alive.
-    print("Gradio launch() returned — entering keep-alive loop for debugging (container will remain up).")
-except Exception as e:
-    print(f"Gradio raised an exception during launch: {e}")
-    import traceback
-    traceback.print_exc()
-
-# Keep the process alive after launch returns so Fly health checks can succeed while we debug.
-import time
-print("Entering fallback keep-alive loop (sleep). Press Ctrl+C to exit.")
-while True:
-    time.sleep(60)
+# Launch for Hugging Face Spaces (simplified, no custom server config needed).
+print("Starting Gradio app for Hugging Face Spaces...")
+iface.launch()

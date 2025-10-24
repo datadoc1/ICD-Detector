@@ -1,5 +1,6 @@
-gradio
+gradio==4.44.1
 onnxruntime
 numpy
 pillow
 opencv-python-headless
+ultralytics
