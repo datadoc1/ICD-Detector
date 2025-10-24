@@ -21,6 +21,10 @@ COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
+# Copy model artifact explicitly so it's present in the image even if a .dockerignore exists
+# (placed before copying the rest of the repo to ensure it gets included)
+COPY model ./model
+
 # Copy repository
 COPY . .
 

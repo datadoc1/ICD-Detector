@@ -33,6 +33,7 @@ print(f"Using model artifact at: {model_path}")
 # Note: model was trained with a YOLOv11 architecture (training script in model/training_script.py)
 session = None
 model = None
+model_load_error = False
 if model_path.endswith('.onnx'):
     try:
         sess_options = ort.SessionOptions()
@@ -40,21 +41,28 @@ if model_path.endswith('.onnx'):
         sess_options.inter_op_num_threads = num_threads
         sess_options.log_severity_level = 3
         session = ort.InferenceSession(model_path, sess_options, providers=['CPUExecutionProvider'])
+        print("ONNX model loaded successfully")
     except Exception as e:
+        # Do NOT exit the process here; allow the web server to start so platform health checks succeed.
         print(f"ERROR: Failed to load ONNX model at '{model_path}': {e}")
-        import traceback, sys
+        import traceback
         traceback.print_exc()
-        sys.exit(1)
+        print("Continuing without a loaded model. Predictions will be disabled until a valid model is provided.")
+        session = None
+        model_load_error = True
 else:
     # Fallback: lazy-import ultralytics only if needed
     try:
         from ultralytics import YOLO
         model = YOLO(model_path)
+        print("PyTorch model loaded successfully")
     except Exception as e:
         print(f"ERROR: Failed to load PyTorch model at '{model_path}': {e}")
-        import traceback, sys
+        import traceback
         traceback.print_exc()
-        sys.exit(1)
+        print("Continuing without a loaded model. Predictions will be disabled until a valid model is provided.")
+        model = None
+        model_load_error = True
 
 # Cache image files to avoid repeated directory scans
 # Prefer the cleaned dataset layout under model/data/val (common export layout).
@@ -203,6 +211,20 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
         import time
         import traceback
         start_time = time.time()
+        # If neither an ONNX session nor a PyTorch model was successfully loaded,
+        # return a graceful placeholder so the server can still run and respond.
+        if session is None and model is None:
+            if image is None:
+                return None, None, "<div style='text-align:center; font-size:1.1em; font-weight:bold; color:red;'>Model not available</div>", "Model not loaded"
+            annotated_image = image.copy()
+            try:
+                cv2.putText(annotated_image, "Model not loaded", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            except Exception:
+                # If annotation fails (e.g., non-array image), ignore and proceed.
+                pass
+            bar_str = "<div style='text-align:center; font-size:1.1em; font-weight:bold; color:red;'>Model failed to load — predictions disabled.</div>"
+            explain_html = "Model failed to load during startup. Check application logs for details."
+            return annotated_image, "Model not loaded", bar_str, explain_html
         try:
             # Use numpy directly for model input (faster than PIL conversion)
             # If we have an ONNX session, run ONNX inference; otherwise use ultralytics model.
@@ -394,7 +416,16 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
 # platform health checks can see the process and we can debug if Gradio exits.
 print(f"Starting Gradio on 0.0.0.0:{os.environ.get('PORT', 8080)} ...")
 try:
-    iface.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 8080)), enable_queue=True)
+    # Older/newer gradio versions differ in how queueing is enabled.
+    # Prefer calling .queue() if available; otherwise launch normally without the
+    # unsupported 'enable_queue' keyword to avoid TypeError on some environments.
+    try:
+        launch_iface = iface.queue()
+    except Exception:
+        launch_iface = iface
+    # On Fly.io, don't share; locally, share for easy access
+    share = 'PORT' not in os.environ
+    launch_iface.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 8080)), share=share)
     # If iface.launch blocks normally, code below won't run. If it returns, log and keep container alive.
     print("Gradio launch() returned — entering keep-alive loop for debugging (container will remain up).")
 except Exception as e:
