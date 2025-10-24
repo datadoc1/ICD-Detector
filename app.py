@@ -13,10 +13,10 @@ num_threads = os.cpu_count() or 1
 print(f"Using device: CPU (threads={num_threads})")
 
 # --- 1. LOAD THE MODEL (validated & fail-fast) ---
-# Prefer an exported ONNX model when present, otherwise fall back to .pt.
-# Fail fast with clear logs if no model artifact is present in the image.
+# Prefer PyTorch model for Fly.io compatibility (ONNX has Protobuf issues on Fly.io)
+# Fall back to ONNX if PyTorch fails
 model_path = None
-searched = ['model/best.onnx', 'model/best.pt', 'best.onnx']
+searched = ['model/best.pt', 'model/best.onnx', 'best.pt', 'best.onnx']
 for p in searched:
     if os.path.exists(p):
         model_path = p
