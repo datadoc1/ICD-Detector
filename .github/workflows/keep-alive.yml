@@ -1,0 +1,14 @@
+name: Keep Hugging Face Space Alive
+
+on:
+  schedule:
+    - cron: '0 12 * * *'  # Runs daily at 12:00 UTC (adjust to your timezone, e.g., '0 17 * * *' for 5 PM UTC-5)
+  workflow_dispatch:  # Allows manual triggering for testing
+
+jobs:
+  ping-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping HF Space
+        run: |
+          curl -f https://huggingface.co/spaces/keola1001/ICD-Detector/ || echo "Ping failed"
