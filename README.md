@@ -1,4 +1,4 @@
-# ICD Detector (Space)
+
 ---
 title: ICD Detector
 emoji: 🫀
@@ -9,6 +9,7 @@ sdk_version: 4.44.1
 app_file: app.py
 pinned: false
 ---
+# ICD Detector (Space)
 **ICD Detector: Spot Implanted Cardiac Devices in Chest X-Rays.**
 
 **Overview (short):**
