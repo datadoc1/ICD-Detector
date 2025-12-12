@@ -31,11 +31,3 @@ jobs:
           git remote remove hf || true
           git remote add hf https://x-access-token:${HF_TOKEN}@huggingface.co/spaces/keola1001/ICD-Detector
           git push hf HEAD:main --force
-
-      - name: (optional) Use Hugging Face Hub Action
-        if: false
-        uses: huggingface/hub-action@v1
-        with:
-          repo_id: keola1001/ICD-Detector
-          repo_type: "space"
-          token: ${{ secrets.HF_TOKEN }}
