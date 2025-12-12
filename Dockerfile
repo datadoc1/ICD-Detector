@@ -17,8 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy only requirements first for better layer caching
 COPY requirements.txt .
 
-# Upgrade pip and install Python dependencies (use ONNX Runtime instead of torch for smaller image)
+# Upgrade pip and install Python dependencies (use CPU-only PyTorch for smaller image)
 RUN pip install --upgrade pip setuptools wheel && \
+    pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy model artifact explicitly so it's present in the image even if a .dockerignore exists
