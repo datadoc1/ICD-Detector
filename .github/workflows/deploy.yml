@@ -3,6 +3,10 @@ name: Sync to Hugging Face
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.github/**'
+      - '*.md'
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -12,8 +16,26 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-      - name: Push to Hugging Face Space
+          persist-credentials: false
+
+      - name: Set Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Push to Hugging Face Space (git)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push https://keola1001:$HF_TOKEN@huggingface.co/spaces/keola1001/ICD-Detector main
+          # configure remote with token and force-push current HEAD to space main
+          git remote remove hf || true
+          git remote add hf https://x-access-token:${HF_TOKEN}@huggingface.co/spaces/keola1001/ICD-Detector
+          git push hf HEAD:main --force
+
+      - name: (optional) Use Hugging Face Hub Action
+        if: false
+        uses: huggingface/hub-action@v1
+        with:
+          repo_id: keola1001/ICD-Detector
+          repo_type: "space"
+          token: ${{ secrets.HF_TOKEN }}

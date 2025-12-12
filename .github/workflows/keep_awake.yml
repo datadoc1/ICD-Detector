@@ -1,0 +1,19 @@
+name: Keep Hugging Face Space Awake
+
+on:
+  schedule:
+    # Run every day at 00:00 UTC (well within the 48h limit)
+    - cron: '0 0 * * *'
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping HF Space
+        run: |
+          # Replace with your actual Space URL
+          curl -I https://huggingface.co/spaces/keola1001/ICD-Detector
+          # Also ping the direct URL if you know it (often helps ensure the app loads)
+          curl -I https://keola1001-ICD-Detector.hf.space
