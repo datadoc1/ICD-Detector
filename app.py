@@ -114,6 +114,38 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
     with gr.Accordion("Supported Models", open=False):
         gr.Markdown(f"**Supported Models:**\n{models_list}")
 
+    # Future impact accordion (full white paper, compressed box)
+    with gr.Accordion("White paper — Project vision & evidence (expand to read)", open=False):
+        gr.HTML(
+            """
+            <div style="max-height:420px; overflow:auto; padding:12px; border:1px solid #eee; border-radius:8px; background:#fafafa;">
+            <h3>ICD Detector — Project Vision</h3>
+            <p>The ICD Detector project represents a proof-of-concept (POC) for automated implantable cardioverter-defibrillator (ICD) detection using YOLOv11-based computer vision on chest X-rays (CXRs). However, this is merely the foundational stage in a broader vision to revolutionize MRI workflows by integrating AI-driven triage that rapidly identifies cardiac implantable electronic devices (CIEDs) and retrieves their specific MRI contraindications. The ultimate goal is to transform a historically bottlenecked process—where ICD-bearing patients are often delayed, turned away, or subjected to manual, time-intensive checks—into a streamlined, high-throughput system that maximizes revenue, minimizes delays, and enhances patient outcomes.</p>
+
+            <h4>The Current Workflow Bottleneck and Its Economic Impact</h4>
+            <p>MRI is one of the fastest-growing imaging modalities, with over 3.7 million scans performed annually in England alone between 2016 and 2017. Yet, patients with CIEDs (including pacemakers and ICDs) face significant barriers: they are approximately 50 times less likely to be referred for MRI compared to the general population, due to historical contraindications and complex safety protocols. Rising CIED implantation rates—currently affecting half a million people in the UK—exacerbate this issue, as 75–80% of pacemaker recipients will eventually require MRI.</p>
+
+            <p><strong>Current workflows are inefficient and costly:</strong></p>
+            <ul>
+              <li><strong>Delays and Coordination Challenges:</strong> For non-conditional CIEDs, 79% of MRI orders encounter difficulties, including waits exceeding one month. Processes require collaboration across multiple hospital departments (cardiology, radiology, device programming), adding time and logistical complexity.</li>
+              <li><strong>Revenue Losses:</strong> Turning away or delaying patients results in direct financial hits. The average MRI scan costs approximately $1,325 in the U.S. (range varies), representing lost revenue per canceled or postponed procedure.</li>
+              <li><strong>Operational Impact:</strong> Slowdowns reduce scanner utilization; manual lookups and device programming consume staff time and reduce throughput.</li>
+            </ul>
+
+            <h4>How the YOLO POC Fits as the First Stage</h4>
+            <p>This project's YOLO-based POC demonstrates automated detection from CXRs, achieving bounding-box localization and device classification with confidence scoring. Trained on 98 labeled images, it validates that AI can flag likely ICDs and serve as the initial step in a multi-stage pipeline:</p>
+            <ol>
+              <li><strong>Automated Detection (Current POC):</strong> Instant ICD flagging from intake CXRs.</li>
+              <li><strong>Contraindication Retrieval:</strong> Map detected devices to manufacturer safety guidance (e.g., MRISafety.com) for real-time checks.</li>
+              <li><strong>Triage & Decision Support:</strong> Rapid recommendations—conditional scanning with reprogramming, alternative imaging, or rescheduling—reducing door-to-completion times from days to minutes.</li>
+              <li><strong>Full Workflow Integration:</strong> Embed in EHRs and scheduling systems to automate alerts and protocols, targeting a 20–50% throughput improvement based on analogous AI-driven radiology optimizations.</li>
+            </ol>
+
+            <p>Shifting from reactive, manual triage to proactive AI-assisted screening changes the operational calculus: capture more safe scans, minimize delays, and optimize resource allocation. For dataset, training details, and sources, see the project README and referenced literature (e.g., MRISafety, HRS guidance).</p>
+            </div>
+            """
+        )
+
     with gr.Row():
         img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, elem_id="upload-img")
         random_btn = gr.Button("🎲 Random CXR", elem_id="random-btn", variant="primary")
