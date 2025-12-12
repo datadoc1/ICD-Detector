@@ -8,30 +8,42 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # Needed to push the keepalive commit to this repo
+  contents: write  # Critical: allows this workflow to push commits
 
 jobs:
   ping_and_keepalive:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Wake up the Space (using your specific URLs)
+      # Step 1: Wake up the Space
       - name: Ping HF Space
         run: |
-          # 1. Ping the main Hugging Face page
           curl -I https://huggingface.co/spaces/keola1001/ICD-Detector
-          
-          # 2. Ping the direct app embed (forces the container to spin up)
-          # Note: HF automatically lowercases the URL for direct access
           curl -I https://keola1001-icd-detector.hf.space
 
-      # Step 2: Checkout code (needed for the keepalive action)
+      # Step 2: Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 3: Prevent GitHub from disabling this workflow after 60 days
-      - name: Keepalive Workflow
-        uses: gautamkrishnar/keepalive-workflow@v2
-        with:
-          # This forces a dummy commit every 50 days so GitHub sees "activity"
-          commit_message: "Automated keepalive [skip ci]"
-          time_elapsed: 50
+      # Step 3: Manual Keepalive Script
+      # This replaces the external action that was getting blocked
+      - name: Manual Keepalive
+        run: |
+          # 1. Setup git config
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          
+          # 2. Check the last commit date
+          last_commit_date=$(git log -1 --format=%ct)
+          current_date=$(date +%s)
+          days_diff=$(( ($current_date - $last_commit_date) / 86400 ))
+          
+          echo "Days since last commit: $days_diff"
+          
+          # 3. If > 50 days, push an empty commit
+          if [ $days_diff -gt 50 ]; then
+            echo "Repo inactive for >50 days. Pushing keepalive commit."
+            git commit --allow-empty -m "Automated keepalive [skip ci]"
+            git push
+          else
+            echo "Repo is active. No keepalive needed."
+          fi
