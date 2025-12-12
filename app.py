@@ -114,37 +114,35 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
     with gr.Accordion("Supported Models", open=False):
         gr.Markdown(f"**Supported Models:**\n{models_list}")
 
-    # Future impact accordion (full white paper, compressed box)
+    # Future impact accordion (full white paper, rendered from markdown with enhanced formatting)
     with gr.Accordion("White paper — Project vision & evidence (expand to read)", open=False):
-        gr.HTML(
-            """
-            <div style="max-height:420px; overflow:auto; padding:12px; border:1px solid #eee; border-radius:8px; background:#fafafa;">
-            <h3>ICD Detector — Project Vision</h3>
-            <p>The ICD Detector project represents a proof-of-concept (POC) for automated implantable cardioverter-defibrillator (ICD) detection using YOLOv11-based computer vision on chest X-rays (CXRs). However, this is merely the foundational stage in a broader vision to revolutionize MRI workflows by integrating AI-driven triage that rapidly identifies cardiac implantable electronic devices (CIEDs) and retrieves their specific MRI contraindications. The ultimate goal is to transform a historically bottlenecked process—where ICD-bearing patients are often delayed, turned away, or subjected to manual, time-intensive checks—into a streamlined, high-throughput system that maximizes revenue, minimizes delays, and enhances patient outcomes.</p>
+        try:
+            with open("white_paper.md", "r", encoding="utf-8") as _f:
+                _wp_md = _f.read()
+        except Exception:
+            _wp_md = "*(White paper not found — create `white_paper.md` to display content here.)*"
 
-            <h4>The Current Workflow Bottleneck and Its Economic Impact</h4>
-            <p>MRI is one of the fastest-growing imaging modalities, with over 3.7 million scans performed annually in England alone between 2016 and 2017. Yet, patients with CIEDs (including pacemakers and ICDs) face significant barriers: they are approximately 50 times less likely to be referred for MRI compared to the general population, due to historical contraindications and complex safety protocols. Rising CIED implantation rates—currently affecting half a million people in the UK—exacerbate this issue, as 75–80% of pacemaker recipients will eventually require MRI.</p>
+        # Prefer converting markdown to HTML for richer, styled output when the 'markdown' package is available.
+        _wp_html = None
+        try:
+            import markdown as _md
+            _wp_html = _md.markdown(
+                _wp_md, extensions=["fenced_code", "tables", "toc", "nl2br"]
+            )
+        except Exception:
+            # No python-markdown; fall back to gr.Markdown rendering.
+            _wp_html = None
 
-            <p><strong>Current workflows are inefficient and costly:</strong></p>
-            <ul>
-              <li><strong>Delays and Coordination Challenges:</strong> For non-conditional CIEDs, 79% of MRI orders encounter difficulties, including waits exceeding one month. Processes require collaboration across multiple hospital departments (cardiology, radiology, device programming), adding time and logistical complexity.</li>
-              <li><strong>Revenue Losses:</strong> Turning away or delaying patients results in direct financial hits. The average MRI scan costs approximately $1,325 in the U.S. (range varies), representing lost revenue per canceled or postponed procedure.</li>
-              <li><strong>Operational Impact:</strong> Slowdowns reduce scanner utilization; manual lookups and device programming consume staff time and reduce throughput.</li>
-            </ul>
-
-            <h4>How the YOLO POC Fits as the First Stage</h4>
-            <p>This project's YOLO-based POC demonstrates automated detection from CXRs, achieving bounding-box localization and device classification with confidence scoring. Trained on 98 labeled images, it validates that AI can flag likely ICDs and serve as the initial step in a multi-stage pipeline:</p>
-            <ol>
-              <li><strong>Automated Detection (Current POC):</strong> Instant ICD flagging from intake CXRs.</li>
-              <li><strong>Contraindication Retrieval:</strong> Map detected devices to manufacturer safety guidance (e.g., MRISafety.com) for real-time checks.</li>
-              <li><strong>Triage & Decision Support:</strong> Rapid recommendations—conditional scanning with reprogramming, alternative imaging, or rescheduling—reducing door-to-completion times from days to minutes.</li>
-              <li><strong>Full Workflow Integration:</strong> Embed in EHRs and scheduling systems to automate alerts and protocols, targeting a 20–50% throughput improvement based on analogous AI-driven radiology optimizations.</li>
-            </ol>
-
-            <p>Shifting from reactive, manual triage to proactive AI-assisted screening changes the operational calculus: capture more safe scans, minimize delays, and optimize resource allocation. For dataset, training details, and sources, see the project README and referenced literature (e.g., MRISafety, HRS guidance).</p>
-            </div>
-            """
-        )
+        # Wrapper start (scrollable, styled)
+        gr.HTML("<div class='white-paper-wrapper' style='max-height:420px; overflow:auto; padding:18px; border:1px solid #eee; border-radius:10px; background:#ffffff;'>")
+        if _wp_html:
+            # Render converted HTML for better control and consistent styling
+            gr.HTML(_wp_html)
+        else:
+            # Fallback: let Gradio render markdown directly
+            gr.Markdown(_wp_md, elem_id="white-paper-markdown")
+        # Wrapper end
+        gr.HTML("</div>")
 
     with gr.Row():
         img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, elem_id="upload-img")
@@ -161,17 +159,35 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
     gr.HTML(
         '''
         <style>
+        /* Basic UI tweaks */
         #upload-img .upload-box { border-radius: 8px; }
         #random-btn button { background: #007bff; color: white; border-radius: 8px; font-weight: bold; }
         .gr-button { border-radius: 8px !important; font-weight: bold !important; }
 
         /* Confidence bar styling */
-        .icd-confidence-wrapper { width: 80%; margin: 8px auto 12px auto; background: #eee; border-radius: 10px; height: 18px; overflow: hidden; }
-        .icd-confidence-fill { height: 100%; border-radius: 10px; }
+        .icd-confidence-wrapper { width: 80%; margin: 8px auto 12px auto; background: #eee; border-radius: 10px; height: 18px; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+        .icd-confidence-fill { height: 100%; border-radius: 10px; transition: width 400ms ease-in-out; }
 
         /* Result container */
         #pred-bar { text-align: center; font-size: 1.05em; font-weight: 600; margin-top: 6px; }
         #explain-box { font-size: 0.95em; color: #222; margin-top: 6px; }
+
+        /* White paper / markdown styling */
+        .white-paper-wrapper { max-height:420px; overflow:auto; padding:18px; border:1px solid #eee; border-radius:10px; background:#ffffff; box-shadow: 0 2px 6px rgba(15,23,42,0.04); }
+        #white-paper-markdown .markdown { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; color: #111827; line-height: 1.7; }
+        #white-paper-markdown h1, #white-paper-markdown h2, #white-paper-markdown h3 { color: #0f172a; margin-top: 1.1rem; margin-bottom: 0.5rem; }
+        #white-paper-markdown p { color: #374151; margin-bottom: 0.75rem; }
+        #white-paper-markdown ul, #white-paper-markdown ol { margin-left: 1.1rem; color: #374151; }
+        #white-paper-markdown table { width:100%; border-collapse: collapse; margin: .6rem 0; }
+        #white-paper-markdown table th, #white-paper-markdown table td { border: 1px solid #e6e9ee; padding: 8px; text-align: left; }
+        #white-paper-markdown pre, #white-paper-markdown code { background:#f3f4f6; padding:6px 8px; border-radius:6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace; font-size:0.9em; }
+        #white-paper-markdown blockquote { border-left: 4px solid #e6eef8; padding-left: 12px; color: #374151; background: #fbfdff; border-radius: 4px; margin: 0.6rem 0; }
+
+        /* Responsive tweaks */
+        @media (max-width: 800px) {
+          .white-paper-wrapper { padding: 12px; max-height: 360px; }
+          #white-paper-markdown .markdown { font-size: 0.95rem; }
+        }
         </style>
         '''
     )
