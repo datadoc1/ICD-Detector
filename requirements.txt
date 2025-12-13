@@ -1,6 +1,6 @@
-gradio>=4.0.0
-ultralytics
-opencv-python-headless
-pillow
+gradio==4.44.1
 numpy
+pillow
+opencv-python-headless
+ultralytics
 markdown
