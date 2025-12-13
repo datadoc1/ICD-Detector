@@ -1,5 +1,5 @@
 gradio>=5.47.2
-gradio_client>=1.0.0
+gradio_client==0.15.0
 numpy
 pillow
 opencv-python-headless
