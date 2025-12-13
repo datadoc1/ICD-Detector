@@ -2,3 +2,4 @@
 /model/datasets
 /model/data
 .env
+model/data/train/images/*
