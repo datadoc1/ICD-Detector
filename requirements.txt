@@ -1,6 +1,7 @@
-gradio
-numpy
-pillow
-opencv-python-headless
+gradio==4.44.1
+huggingface-hub==0.23.4
 ultralytics
+opencv-python-headless
+pillow
+numpy
 markdown
