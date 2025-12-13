@@ -1,7 +1,7 @@
-gradio>=5.47.2
+gradio
 numpy
 pillow
 opencv-python-headless
 ultralytics
 markdown
-huggingface_hub<1.0
+huggingface_hub
