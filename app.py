@@ -373,4 +373,4 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
 # --- 4. LAUNCH THE APP ---
 # Launch for Hugging Face Spaces (simplified, no custom server config needed).
 print("Starting Gradio app for Hugging Face Spaces...")
-iface.launch()
+iface.launch(share=False)

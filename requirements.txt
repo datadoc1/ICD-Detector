@@ -5,3 +5,4 @@ opencv-python-headless
 ultralytics
 markdown
 huggingface-hub==0.19.3
+pydantic==2.10.6
