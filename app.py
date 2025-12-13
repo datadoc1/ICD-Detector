@@ -145,7 +145,7 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
         gr.HTML("</div>")
 
     with gr.Row():
-        img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, show_download_button=False, elem_id="upload-img")
+        img_input = gr.Image(type="numpy", label="Upload Chest X-Ray", show_label=False, elem_id="upload-img")
         random_btn = gr.Button("🎲 Random CXR", elem_id="random-btn", variant="primary")
 
     with gr.Row():
