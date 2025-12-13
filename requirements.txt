@@ -4,3 +4,4 @@ pillow
 opencv-python-headless
 ultralytics
 markdown
+huggingface_hub<1.0
