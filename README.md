@@ -7,6 +7,7 @@ sdk: gradio
 sdk_version: 4.44.1
 app_file: app.py
 pinned: false
+python_version: "3.12"
 ---
 # ICD Detector (Space)
 **ICD Detector: Spot Implanted Cardiac Devices in Chest X-Rays.**
