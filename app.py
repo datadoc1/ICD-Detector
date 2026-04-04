@@ -195,12 +195,12 @@ with gr.Blocks() as iface:
     # Function to select a random image from the cached list
     def get_random_image():
         if not image_files:
-            return None
+            return None, None
         random_file = random.choice(image_files)
         img_path = os.path.join(images_dir, random_file)
         img = Image.open(img_path).convert("RGB")
         img_np = np.array(img)
-        return img_np
+        return img_np, random_file
 
     # Show base image and run prediction in one go to avoid redundant processing
     def process_image(image):
@@ -213,15 +213,17 @@ with gr.Blocks() as iface:
     img_input.change(
         fn=process_image,
         inputs=img_input,
-        outputs=[base_viewer, output_img, pred_bar, explain_box],
-        queue=True
+        outputs=[base_viewer, output_img, pred_bar, explain_box]
     )
 
     # Random CXR: show base image and run prediction in one function
     def random_cxr_process():
-        img_np = get_random_image()
+        print("Random CXR button clicked!", flush=True)
+        img_np, random_file = get_random_image()
         if img_np is None:
+            print("WARNING: image_files was empty, no random image found", flush=True)
             return None, None, "", ""
+        print(f"Loaded random image: {random_file}", flush=True)
         # Run prediction only once
         pred_img, pred_txt, pred_bar_str, explain_str = _predict_and_bar(img_np)
         return img_np, pred_img, pred_bar_str, explain_str
@@ -229,8 +231,7 @@ with gr.Blocks() as iface:
     random_btn.click(
         fn=random_cxr_process,
         inputs=None,
-        outputs=[base_viewer, output_img, pred_bar, explain_box],
-        queue=True
+        outputs=[base_viewer, output_img, pred_bar, explain_box]
     )
 
     def _predict_and_bar(image):
