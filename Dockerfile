@@ -6,7 +6,6 @@ WORKDIR /app
 
 # Install minimal system dependencies required for runtime (opencv, pillow)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
     ca-certificates \
     libglib2.0-0 \
     libgl1 \
@@ -15,19 +14,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
  && rm -rf /var/lib/apt/lists/*
 
-# Copy only requirements first for better layer caching
+# Copy requirements first for better layer caching
 COPY requirements.txt .
 
-# Upgrade pip and install Python dependencies (use CPU-only PyTorch for smaller image)
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+# Upgrade pip and install all Python dependencies in one layer
+# torch torchvision are CPU-only to keep image small
+# --no-cache-dir avoids caching large wheels in image layers
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy model artifact explicitly so it's present in the image even if a .dockerignore exists
-# (placed before copying the rest of the repo to ensure it gets included)
-COPY model ./model
-
-# Copy repository
+# Copy repository (model/, app.py, white_paper.md, etc.)
 COPY . .
 
 # Expose the port Gradio will listen on (internal container port)

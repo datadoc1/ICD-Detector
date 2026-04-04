@@ -1,0 +1,29 @@
+# Python artifacts — massive, never needed in image
+.venv
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+
+# Training artifacts — only best.pt model is needed at runtime, not training data
+datasets
+model/datasets
+model/data/train
+model/data/test
+training_script.py
+email_chain.md
+
+# Environment and IDE
+.env
+.vscode
+.DS_Store
+
+# Docker and CI
+Dockerfile
+docker-compose*
+.github
+
+# Keep only runtime-needed markdown
+*.md
+!white_paper.md
