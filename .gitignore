@@ -1,5 +1,6 @@
 /datasets
 /model/datasets
-/model/data
+/model/data/train
+/model/data/test
 .env
 model/data/train/images/*
