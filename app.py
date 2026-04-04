@@ -373,7 +373,21 @@ with gr.Blocks() as iface:
 # --- 4. LAUNCH THE APP ---
 # Launch for Hugging Face Spaces (simplified, no custom server config needed).
 print("Starting Gradio app for Hugging Face Spaces...")
-iface.launch(
-    css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { flex-wrap: wrap; }",
-    server_name="0.0.0.0"
-)
+import sys, time
+print("=== Gradio Launch Debug ===", flush=True)
+print(f"GRADIO_SERVER_NAME={os.environ.get('GRADIO_SERVER_NAME', 'not set')}", flush=True)
+print(f"GRADIO_SERVER_PORT={os.environ.get('GRADIO_SERVER_PORT', 'not set')}", flush=True)
+print(f"PORT={os.environ.get('PORT', 'not set')}", flush=True)
+print(f"SERVER_NAME in environ: {'GRADIO_SERVER_NAME' in os.environ}", flush=True)
+print("=== Calling iface.launch() ===", flush=True)
+sys.stdout.flush()
+t0 = time.time()
+try:
+    iface.launch(
+        css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { flex-wrap: wrap; }",
+        server_name="0.0.0.0"
+    )
+except Exception as e:
+    print(f"iface.launch() raised: {e}", flush=True)
+    raise
+print(f"iface.launch() returned after {time.time()-t0:.1f}s", flush=True)
