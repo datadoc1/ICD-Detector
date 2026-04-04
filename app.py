@@ -375,6 +375,5 @@ with gr.Blocks() as iface:
 print("Starting Gradio app for Hugging Face Spaces...")
 iface.launch(
     css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { flex-wrap: wrap; }",
-    server_name="0.0.0.0",
-    server_port=8080
+    server_name="0.0.0.0"
 )

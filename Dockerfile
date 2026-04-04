@@ -35,4 +35,4 @@ ENV GRADIO_SERVER_NAME=0.0.0.0
 ENV GRADIO_SERVER_PORT=8080
 
 # Start the app; ensure GRADIO_SERVER_PORT is set from $PORT at runtime if present
-CMD ["sh", "-c", "export GRADIO_SERVER_PORT=${PORT:-8080} && python app.py"]
+CMD ["sh", "-c", "export GRADIO_SERVER_NAME=0.0.0.0 && export GRADIO_SERVER_PORT=${PORT:-8080} && python app.py"]
