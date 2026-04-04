@@ -27,13 +27,13 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Copy repository (model/, app.py, white_paper.md, etc.)
 COPY . .
 
-# Expose the port Gradio will listen on (internal container port)
-EXPOSE 8080
+# Expose the port Gradio will listen on (HF Spaces Docker routes to 7860)
+EXPOSE 7860
 
 # Ensure Gradio binds to 0.0.0.0 and use platform PORT at runtime
 ENV GRADIO_SERVER_NAME=0.0.0.0
-ENV GRADIO_SERVER_PORT=8080
+ENV GRADIO_SERVER_PORT=7860
 ENV PYTHONUNBUFFERED=1
 
 # Start the app; ensure GRADIO_SERVER_PORT is set from $PORT at runtime if present
-CMD ["sh", "-c", "export GRADIO_SERVER_NAME=0.0.0.0 && export GRADIO_SERVER_PORT=${PORT:-8080} && python app.py"]
+CMD ["sh", "-c", "export GRADIO_SERVER_NAME=0.0.0.0 && export GRADIO_SERVER_PORT=${PORT:-7860} && python app.py"]
