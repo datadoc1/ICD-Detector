@@ -58,7 +58,7 @@ image_files = sorted([f for f in os.listdir(images_dir) if f.lower().endswith(('
 # --- 3. CREATE THE GRADIO INTERFACE ---
 # This creates the "drag-and-drop" web UI with a Random CXR button.
 
-with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { flex-wrap: wrap; }") as iface:
+with gr.Blocks() as iface:
     gr.Markdown("# ICD Detector: Spot Implanted Cardiac Devices in Chest X-Rays.")
     gr.Markdown(
         """
@@ -373,4 +373,8 @@ with gr.Blocks(css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { f
 # --- 4. LAUNCH THE APP ---
 # Launch for Hugging Face Spaces (simplified, no custom server config needed).
 print("Starting Gradio app for Hugging Face Spaces...")
-iface.launch()
+iface.launch(
+    css=".gr-block { max-width: 1200px; margin: 0 auto; } .gr-row { flex-wrap: wrap; }",
+    server_name="0.0.0.0",
+    server_port=8080
+)
